@@ -16,16 +16,16 @@ spec:
         tier: backend
         track: stable
     spec:
-      nodeSelector:
-        cloud.google.com/gke-preemptible: "true"
-      tolerations:
-      - effect: NoSchedule
-        key: task
-        operator: Equal
-        value: preemptive
+      # nodeSelector:
+      #   cloud.google.com/gke-preemptible: "true"
+      # tolerations:
+      # - effect: NoSchedule
+      #   key: task
+      #   operator: Equal
+      #   value: preemptive
       containers:
       - name: runner
-        image: gcr.io/rpl2-fiuba/rpl-2.0-runner
+        image: runner_rpl:local
         ports:
           - name: http
             containerPort: 8000
@@ -43,7 +43,7 @@ spec:
             path: /health
             port: 8000
       - name: worker
-        image: gcr.io/rpl2-fiuba/rpl-2.0-worker
+        image: worker_rpl:local
         env:
         - name: QUEUE_URL
           value: amqp://guest:guest@queue:5672
@@ -52,7 +52,7 @@ spec:
         - name: QUEUE_ACTIVITIES_NAME
           value: hello
         - name: DOCKER_RUNNER_IMAGE
-          value: rpl-2.0-runner
+          value: runner_rpl
         ports:
           - name: http
             containerPort: 8088

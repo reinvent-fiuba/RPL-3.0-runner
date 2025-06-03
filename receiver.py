@@ -42,7 +42,7 @@ def ejecutar(submission_id, lang="c_std11"):
 
         print(f"Obteniendo submission data {submission_id}....")
         # GET SUBMISSION
-        response = requests.get(f"{URL_RPL_BACKEND}/api/submissions/{submission_id}")
+        response = requests.get(f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}")
 
         print(json.dumps(response.json(), indent=4))
 
@@ -86,7 +86,7 @@ def ejecutar(submission_id, lang="c_std11"):
         print(f"Obteniendo submission files {submission_file_id}....")
         # GET SUBMISSION FILES
         submission_file_response = requests.get(
-            f"{URL_RPL_BACKEND}/api/files/{submission_file_id}"
+            f"{URL_RPL_BACKEND}/api/v3/RPLFile/{submission_file_id}"
         )
 
         if submission_file_response.status_code != 200:
@@ -102,7 +102,7 @@ def ejecutar(submission_id, lang="c_std11"):
         if activity_starting_files_id:
             # GET ACTIVITY FILES
             activity_file_response = requests.get(
-                f"{URL_RPL_BACKEND}/api/files/{activity_starting_files_id}"
+                f"{URL_RPL_BACKEND}/api/v3/RPLFile/{activity_starting_files_id}"
             )
 
             with open(tmpdir + "/activity_files.tar.gz", "wb") as af:
@@ -116,7 +116,7 @@ def ejecutar(submission_id, lang="c_std11"):
 
         print("Actualizando submission: PROCESSING")
         response = requests.put(
-            f"{URL_RPL_BACKEND}/api/submissions/{submission_id}/status",
+            f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/status",
             json={"status": "PROCESSING"},
         )
         if response.status_code != 200:
@@ -184,7 +184,7 @@ def ejecutar(submission_id, lang="c_std11"):
 
             # mandar resultado (json_output/result) POST al backend
             response = requests.post(
-                f"{URL_RPL_BACKEND}/api/submissions/{submission_id}/result",
+                f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/result",
                 json=result,
             )
             if response.status_code != 201:
