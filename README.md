@@ -97,7 +97,7 @@ docker build -t rpl-2.0-runner ./rpl_runner
 Any changes made to any file inside the `rpl_runner` folder will need to rebuild the docker image.
 
 
-### The hole circle
+### The whole circle
 Start the rabbitmq server, the Java RPL Server and the rabbitmq_receive.py
 
 Login, get your auth token.

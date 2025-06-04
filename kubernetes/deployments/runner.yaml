@@ -48,7 +48,7 @@ spec:
         - name: QUEUE_URL
           value: amqp://guest:guest@queue:5672
         - name: URL_RPL_BACKEND
-          value: http://producer:8080
+          value: http://rpl-activities-api:80
         - name: QUEUE_ACTIVITIES_NAME
           value: hello
         - name: DOCKER_RUNNER_IMAGE

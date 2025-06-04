@@ -161,7 +161,7 @@ def ejecutar(submission_id, lang="c_std11"):
 
             print("POSTing submission to runner server")
             response = requests.post(
-                "http://127.0.0.1:8000/",
+                "http://runner:8000/",
                 files={
                     "file": ("submissionRECEIVED.tar", sub_tar),
                     "cflags": (None, activity_compilation_flags),
@@ -184,7 +184,7 @@ def ejecutar(submission_id, lang="c_std11"):
 
             # mandar resultado (json_output/result) POST al backend
             response = requests.post(
-                f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/result",
+                f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/execLog",
                 json=result,
             )
             if response.status_code != 201:
