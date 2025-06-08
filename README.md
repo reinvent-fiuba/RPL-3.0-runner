@@ -61,14 +61,14 @@ stdout result example:
 	
 ```json
 {
-  "test_run_result":"OK",                                                                                                                                                                                    
-  "test_run_stage":"COMPLETE",
-  "test_run_exit_message": "Completed all stages",
-  "test_run_unit_test_result": {
-    "passed": 2,
-    "failed": 0,
-  "errored": 0,
-  "tests":[
+  "tests_execution_result_status":"OK",                                                                                                                                                                                    
+  "tests_execution_stage":"COMPLETE",
+  "tests_execution_exit_message": "Completed all stages",
+  "unit_test_suite_result_summary": {
+    "amount_passed": 2,
+    "amount_failed": 0,
+  "amount_errored": 0,
+  "single_test_reports":[
     {
       "name": "test_1",
       "status": "PASSED",
@@ -80,8 +80,8 @@ stdout result example:
       "messages": null
     }                                                                                                                                         
   ],
-  "test_run_stdout": "2020-07-19 20:16:55,844 RPL-2.0      INFO     Build Started\n2020-07-19 20:16:55,845 RPL-2.0      INFO     Building\n2020-07-19 20:16:55,846 RPL-2.0      INFO     start_BUILD\n/usr/bin/python3.7 -m py_compile  unit_test.py unit_test_wrapper.py assignment_main.py\n2020-07-19 20:17:02,219 RPL-2.0      INFO     end_BUILD\n2020-07-19 20:17:02,219 RPL-2.0      INFO     Build Ended\n2020-07-19 20:17:02,219 RPL-2.0      INFO     Run Started\n2020-07-19 20:17:02,221 RPL-2.0      INFO     Running Unit Tests\n2020-07-19 20:17:02,221 RPL-2.0      INFO     start_RUN\n\n2020-07-19 20:17:02,287 RPL-2.0      INFO     end_RUN\n2020-07-19 20:17:02,288 RPL-2.0      INFO     RUN OK\n2020-07-19 20:17:02,288 RPL-2.0      INFO     Run Ended\n",
-  "test_run_stderr":"",
+  "tests_execution_stdout": "2020-07-19 20:16:55,844 RPL-2.0      INFO     Build Started\n2020-07-19 20:16:55,845 RPL-2.0      INFO     Building\n2020-07-19 20:16:55,846 RPL-2.0      INFO     start_BUILD\n/usr/bin/python3.7 -m py_compile  unit_test.py unit_test_wrapper.py assignment_main.py\n2020-07-19 20:17:02,219 RPL-2.0      INFO     end_BUILD\n2020-07-19 20:17:02,219 RPL-2.0      INFO     Build Ended\n2020-07-19 20:17:02,219 RPL-2.0      INFO     Run Started\n2020-07-19 20:17:02,221 RPL-2.0      INFO     Running Unit Tests\n2020-07-19 20:17:02,221 RPL-2.0      INFO     start_RUN\n\n2020-07-19 20:17:02,287 RPL-2.0      INFO     end_RUN\n2020-07-19 20:17:02,288 RPL-2.0      INFO     RUN OK\n2020-07-19 20:17:02,288 RPL-2.0      INFO     Run Ended\n",
+  "tests_execution_stderr":"",
 } 
 ```
 

@@ -80,35 +80,35 @@ def process(lang, test_mode, filename, cflags=""):
             try:
                 # Comenzamos la corrida
                 test_runner.process()  # writes stuff to my_stdout and my_stderr
-                result["test_run_result"] = "OK"
-                result["test_run_stage"] = "COMPLETE"
-                result["test_run_exit_message"] = "Completed all stages"
+                result["tests_execution_result_status"] = "OK"
+                result["tests_execution_stage"] = "COMPLETE"
+                result["tests_execution_exit_message"] = "Completed all stages"
             except TimeOutError as e:
-                result["test_run_result"] = "TIME_OUT"
-                result["test_run_stage"] = e.stage
-                result["test_run_exit_message"] = e.message
+                result["tests_execution_result_status"] = "TIME_OUT"
+                result["tests_execution_stage"] = e.stage
+                result["tests_execution_exit_message"] = e.message
             except RunnerError as e:
-                result["test_run_result"] = "ERROR"
-                result["test_run_stage"] = e.stage
-                result["test_run_exit_message"] = e.message
+                result["tests_execution_result_status"] = "ERROR"
+                result["tests_execution_stage"] = e.stage
+                result["tests_execution_exit_message"] = e.message
                 LOG.error("HUBO ERRORES: {message} en la etapa de {stage}".format(message=e.message, stage=e.stage))
             except Exception as e:
-                result["test_run_result"] = "UNKNOWN_ERROR"
-                result["test_run_stage"] = "unknown"
-                result["test_run_exit_message"] = str(e)
+                result["tests_execution_result_status"] = "UNKNOWN_ERROR"
+                result["tests_execution_stage"] = "unknown"
+                result["tests_execution_exit_message"] = str(e)
                 raise e
             # Get criterion unit tests results
-            if test_mode == "unit_test" and result["test_run_stage"] == "COMPLETE":
-                result["test_run_unit_test_result"] = get_unit_test_results(
+            if test_mode == "unit_test" and result["tests_execution_stage"] == "COMPLETE":
+                result["unit_test_suite_result_summary"] = get_unit_test_results(
                     tmpdir, lang
                 )
             else:
-                result["test_run_unit_test_result"] = None  # Nice To have for debbuging
+                result["unit_test_suite_result_summary"] = None  # Nice To have for debbuging
             my_stdout.seek(0)
             my_stderr.seek(0)
-            result["test_run_stdout"] = my_stdout.read(9999)  # we can only store up to 10k chars in the column
-            result["test_run_stderr"] = my_stderr.read(9999)
-            result["stdout_only_run"] = parse_stdout(result["test_run_stdout"])
+            result["tests_execution_stdout"] = my_stdout.read(9999)  # we can only store up to 10k chars in the column
+            result["tests_execution_stderr"] = my_stderr.read(9999)
+            result["stdout_only_run"] = parse_stdout(result["tests_execution_stdout"])
             LOG.info(json.dumps(result, indent=4))
             return result
 
@@ -168,15 +168,15 @@ def get_custom_unit_test_results_json(criterion_json):
     parsed_json = json.loads(str(criterion_json))
     result = {}
     if parsed_json["test_suites"] and len(parsed_json["test_suites"]) > 0:
-        result["passed"] = parsed_json["passed"]
-        result["failed"] = parsed_json["failed"]
-        result["errored"] = parsed_json["errored"]
-        result["tests"] = parsed_json["test_suites"][0]["tests"]
+        result["amount_passed"] = parsed_json["passed"]
+        result["amount_failed"] = parsed_json["failed"]
+        result["amount_errored"] = parsed_json["errored"]
+        result["single_test_reports"] = parsed_json["test_suites"][0]["tests"]
 
-    for i in range(len(result["tests"])):
-        if result["tests"][i]["status"] in ["FAILED", "ERRORED"]:
-            result["tests"][i]["messages"] = ";    ".join(
-                result["tests"][i]["messages"]
+    for i in range(len(result["single_test_reports"])):
+        if result["single_test_reports"][i]["status"] in ["FAILED", "ERRORED"]:
+            result["single_test_reports"][i]["messages"] = ";    ".join(
+                result["single_test_reports"][i]["messages"]
             )
     return result
 
