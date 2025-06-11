@@ -8,6 +8,7 @@ services:
       QUEUE_URL: amqp://local_queue:5672
       URL_RPL_BACKEND: http://activities_api:80
       QUEUE_ACTIVITIES_NAME: hello
+      API_KEY: test_api_key
     networks:
       - runner_net
       - rpl3_backend_localrpl_net

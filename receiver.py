@@ -7,7 +7,7 @@ import tempfile
 
 import requests
 
-from config import URL_RPL_BACKEND, DOCKER_RUNNER_IMAGE
+from config import URL_RPL_BACKEND, API_KEY
 
 
 def main():
@@ -42,7 +42,10 @@ def ejecutar(submission_id, lang="c_std11"):
 
         print(f"Obteniendo submission data {submission_id}....")
         # GET SUBMISSION
-        response = requests.get(f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}")
+        response = requests.get(
+            f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}", 
+            headers={"Authorization": f"Bearer {API_KEY}"}
+        )
 
         print(json.dumps(response.json(), indent=4))
 
@@ -85,7 +88,8 @@ def ejecutar(submission_id, lang="c_std11"):
         print(f"Obteniendo submission files {submission_rplfile_id}....")
         # GET SUBMISSION FILES
         submission_rplfile_response = requests.get(
-            f"{URL_RPL_BACKEND}/api/v3/RPLFile/{submission_rplfile_id}"
+            f"{URL_RPL_BACKEND}/api/v3/RPLFile/{submission_rplfile_id}", 
+            headers={"Authorization": f"Bearer {API_KEY}"}
         )
 
         if submission_rplfile_response.status_code != 200:
@@ -101,9 +105,9 @@ def ejecutar(submission_id, lang="c_std11"):
         if activity_starting_rplfile_id:
             # GET ACTIVITY FILES
             activity_file_response = requests.get(
-                f"{URL_RPL_BACKEND}/api/v3/RPLFile/{activity_starting_rplfile_id}"
+                f"{URL_RPL_BACKEND}/api/v3/RPLFile/{activity_starting_rplfile_id}", 
+                headers={"Authorization": f"Bearer {API_KEY}"}
             )
-
             with open(tmpdir + "/activity_files.tar.gz", "wb") as af:
                 af.write(activity_file_response.content)
         else:
@@ -117,7 +121,9 @@ def ejecutar(submission_id, lang="c_std11"):
         response = requests.put(
             f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/status",
             json={"status": "PROCESSING"},
+            headers={"Authorization": f"Bearer {API_KEY}"}
         )
+        
         if response.status_code != 200:
             raise Exception(
                 f"Error al actualizar el estado de la submission: {response.json()}"
@@ -184,7 +190,8 @@ def ejecutar(submission_id, lang="c_std11"):
             # mandar resultado (json_output/result) POST al backend
             response = requests.post(
                 f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/execLog",
-                json=result,
+                json=result, 
+                headers={"Authorization": f"Bearer {API_KEY}"}
             )
             if response.status_code != 201:
                 raise Exception(

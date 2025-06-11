@@ -51,8 +51,11 @@ spec:
           value: http://rpl-activities-api:80
         - name: QUEUE_ACTIVITIES_NAME
           value: hello
-        - name: DOCKER_RUNNER_IMAGE
-          value: runner_rpl
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: runner-api-key
+              key: runner-api-key
         ports:
           - name: http
             containerPort: 8088
