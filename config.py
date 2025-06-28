@@ -12,6 +12,6 @@ DEBUG = flag("DEBUG", False)
 SYSTEMD = flag("SYSTEMD", False)
 
 URL_RPL_BACKEND = os.environ.get("URL_RPL_BACKEND", "http://localhost:8080")
+API_KEY = os.environ.get("API_KEY", "test_api_key")
 QUEUE_URL = os.environ.get("QUEUE_URL", "amqp://guest:guest@localhost:5672")
 QUEUE_ACTIVITIES_NAME = os.environ.get("QUEUE_ACTIVITIES_NAME", "hello")
-DOCKER_RUNNER_IMAGE = os.environ.get("DOCKER_RUNNER_IMAGE", "rpl-2.0-runner:latest")

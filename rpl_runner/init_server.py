@@ -42,9 +42,9 @@ def upload_file():
             result = process(lang=lang, test_mode=test_mode, filename=dir, cflags=cflags)
         except Exception as e:
             result = {}
-            result["test_run_result"] = "UNKNOWN_ERROR"
-            result["test_run_stage"] = "unknown"
-            result["test_run_exit_message"] = str(e)
+            result["tests_execution_result_status"] = "UNKNOWN_ERROR"
+            result["tests_execution_stage"] = "unknown"
+            result["tests_execution_exit_message"] = str(e)
         finally:
             os.system(f'rm -r -f {UPLOAD_FOLDER}/*')
         return json.dumps(result)

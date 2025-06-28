@@ -1,0 +1,39 @@
+services:
+  queue_reveicer:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    environment:
+      QUEUE_URL: amqp://local_queue:5672
+      URL_RPL_BACKEND: http://activities_api:80
+      QUEUE_ACTIVITIES_NAME: hello
+      API_KEY: test_api_key
+    networks:
+      - runner_net
+      - rpl3_backend_localrpl_net
+      - rpl3_backend_localdb_net
+  runner:
+    build:
+      context: ./rpl_runner
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - runner_net
+      - rpl3_backend_localrpl_net
+      - rpl3_backend_localdb_net
+
+networks:
+  runner_net:
+    driver: bridge
+
+  # The network that has the queue definition
+  rpl3_backend_localdb_net:
+    external: true
+  
+  # the network that has the activities API
+  rpl3_backend_localrpl_net:
+    external: true
+
+
+

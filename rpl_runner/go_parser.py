@@ -27,10 +27,10 @@ def parse(file):
         else:
             message += line
     return {
-        "tests": tests,
-        "passed": passed,
-        "failed": failed,
-        "errored": errored
+        "single_test_reports": tests,
+        "amount_passed": passed,
+        "amount_failed": failed,
+        "amount_errored": errored
     }
 
 def main():

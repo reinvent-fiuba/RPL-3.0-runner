@@ -7,7 +7,7 @@ import tempfile
 
 import requests
 
-from config import URL_RPL_BACKEND, DOCKER_RUNNER_IMAGE
+from config import URL_RPL_BACKEND, API_KEY
 
 
 def main():
@@ -42,7 +42,10 @@ def ejecutar(submission_id, lang="c_std11"):
 
         print(f"Obteniendo submission data {submission_id}....")
         # GET SUBMISSION
-        response = requests.get(f"{URL_RPL_BACKEND}/api/submissions/{submission_id}")
+        response = requests.get(
+            f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}", 
+            headers={"Authorization": f"Bearer {API_KEY}"}
+        )
 
         print(json.dumps(response.json(), indent=4))
 
@@ -56,55 +59,55 @@ def ejecutar(submission_id, lang="c_std11"):
 
         # SUBMISSION AND ACTIVITY DETAILS
 
-        submission_file_id = submission["submission_file_id"]
-        submission_file_name = submission["submission_file_name"]
+        submission_rplfile_id = submission["submission_rplfile_id"]
+        submission_rplfile_name = submission["submission_rplfile_name"]
 
-        activity_starting_files_id = submission["activity_starting_files_id"]
-        activity_starting_files_name = submission["activity_starting_files_name"]
+        activity_starting_rplfile_id = submission["activity_starting_rplfile_id"]
+        activity_starting_rplfile_name = submission["activity_starting_rplfile_name"]
 
-        activity_unit_test_file_content = submission[
+        activity_unit_tests_file_content = submission[
             "activity_unit_tests_content"
         ]  # string with unit_test content
         activity_io_tests = submission[
-            "activity_iotests"
+            "activity_io_tests_input"
         ]  # Array of strings (input part of IO tests)
 
         activity_language = submission["activity_language"]
 
         activity_compilation_flags = submission["compilation_flags"]
 
-        is_io_tested = submission["is_iotested"]
+        is_io_tested = submission["is_io_tested"]
 
         test_mode = "IO" if is_io_tested else "unit_test"
 
         print(f"======TEST MODE: {test_mode} ===========")
 
-        # print(activity_unit_test_file_content)
 
         # ---------------------------------------------------------
 
-        print(f"Obteniendo submission files {submission_file_id}....")
+        print(f"Obteniendo submission files {submission_rplfile_id}....")
         # GET SUBMISSION FILES
-        submission_file_response = requests.get(
-            f"{URL_RPL_BACKEND}/api/files/{submission_file_id}"
+        submission_rplfile_response = requests.get(
+            f"{URL_RPL_BACKEND}/api/v3/RPLFile/{submission_rplfile_id}", 
+            headers={"Authorization": f"Bearer {API_KEY}"}
         )
 
-        if submission_file_response.status_code != 200:
+        if submission_rplfile_response.status_code != 200:
             raise Exception("Error al obtener el comprimido de submission")
 
-        with open(tmpdir + "/submission_files.tar.gz", "wb") as sf:
-            sf.write(submission_file_response.content)
+        with open(tmpdir + "/submission_rplfile.tar.gz", "wb") as sf:
+            sf.write(submission_rplfile_response.content)
 
         # ---------------------------------------------------------
 
-        print(f"Obteniendo activity files {activity_starting_files_id}....")
+        print(f"Obteniendo activity files {activity_starting_rplfile_id}....")
 
-        if activity_starting_files_id:
+        if activity_starting_rplfile_id:
             # GET ACTIVITY FILES
             activity_file_response = requests.get(
-                f"{URL_RPL_BACKEND}/api/files/{activity_starting_files_id}"
+                f"{URL_RPL_BACKEND}/api/v3/RPLFile/{activity_starting_rplfile_id}", 
+                headers={"Authorization": f"Bearer {API_KEY}"}
             )
-
             with open(tmpdir + "/activity_files.tar.gz", "wb") as af:
                 af.write(activity_file_response.content)
         else:
@@ -116,9 +119,11 @@ def ejecutar(submission_id, lang="c_std11"):
 
         print("Actualizando submission: PROCESSING")
         response = requests.put(
-            f"{URL_RPL_BACKEND}/api/submissions/{submission_id}/status",
+            f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/status",
             json={"status": "PROCESSING"},
+            headers={"Authorization": f"Bearer {API_KEY}"}
         )
+        
         if response.status_code != 200:
             raise Exception(
                 f"Error al actualizar el estado de la submission: {response.json()}"
@@ -129,21 +134,21 @@ def ejecutar(submission_id, lang="c_std11"):
 
             print("Agrego archivos de la submission")
             # Agrego archivos de la submission (incluyen los archivos de la activity por ahora)
-            with tarfile.open(tmpdir + "/submission_files.tar.gz") as submission_tar:
+            with tarfile.open(tmpdir + "/submission_rplfile.tar.gz") as submission_tar:
                 for member_tarinfo in submission_tar.getmembers():
                     member_fileobj = submission_tar.extractfile(member_tarinfo)
                     tar.addfile(tarinfo=member_tarinfo, fileobj=member_fileobj)
 
-            if activity_unit_test_file_content:
+            if activity_unit_tests_file_content:
                 print("Agrego archivos de Unit test")
                 # Agrego archivo de test unitario
                 unit_test_info = tarfile.TarInfo(
                     name="unit_test." + get_unit_test_extension(activity_language)
                 )
-                unit_test_info.size = len(activity_unit_test_file_content)
+                unit_test_info.size = len(activity_unit_tests_file_content)
                 tar.addfile(
                     tarinfo=unit_test_info,
-                    fileobj=io.BytesIO(activity_unit_test_file_content.encode("utf-8")),
+                    fileobj=io.BytesIO(activity_unit_tests_file_content.encode("utf-8")),
                 )
 
             if activity_io_tests:
@@ -161,7 +166,7 @@ def ejecutar(submission_id, lang="c_std11"):
 
             print("POSTing submission to runner server")
             response = requests.post(
-                "http://127.0.0.1:8000/",
+                "http://runner:8000/",
                 files={
                     "file": ("submissionRECEIVED.tar", sub_tar),
                     "cflags": (None, activity_compilation_flags),
@@ -176,16 +181,17 @@ def ejecutar(submission_id, lang="c_std11"):
             print(json.dumps(result, indent=4))
 
             print("################## STDOUT ######################")
-            print(result["test_run_stdout"])
+            print(result["tests_execution_stdout"])
             print("################## STDOUT ######################")
             print("################## STDERR ######################")
-            print(result["test_run_stderr"])
+            print(result["tests_execution_stderr"])
             print("################## STDERR ######################")
 
             # mandar resultado (json_output/result) POST al backend
             response = requests.post(
-                f"{URL_RPL_BACKEND}/api/submissions/{submission_id}/result",
-                json=result,
+                f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/execLog",
+                json=result, 
+                headers={"Authorization": f"Bearer {API_KEY}"}
             )
             if response.status_code != 201:
                 raise Exception(

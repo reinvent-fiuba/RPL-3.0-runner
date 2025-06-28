@@ -6,7 +6,7 @@ spec:
   ports:
     - nodePort: 30024
       protocol: TCP
-      port: 8088
+      port: 8000
   selector:
     app: runner
     tier: backend

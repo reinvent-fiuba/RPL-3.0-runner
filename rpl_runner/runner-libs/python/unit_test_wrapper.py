@@ -31,10 +31,10 @@ class RplTestResult(unittest.TestResult):
                       self.skipped])
 
         result = {
-            "passed": len(self.passed),
-            "failed": len(self.failures),
-            "errored": len(self.errors),
-            'tests': tests
+            "amount_passed": len(self.passed),
+            "amount_failed": len(self.failures),
+            "amount_errored": len(self.errors),
+            'single_test_reports': tests
         }
 
         # print(json.dumps(result, indent=4))
