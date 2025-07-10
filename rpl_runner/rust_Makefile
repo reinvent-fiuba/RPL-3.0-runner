@@ -1,0 +1,30 @@
+ARCHIVOS_SRC = $(wildcard src/*.rs)
+ARCHIVOS_TESTS = $(wildcard tests/*.rs)
+
+build_io:
+	cargo check --offline --locked --quiet
+	cargo build --release --offline --locked --quiet
+	@rm -f $(ARCHIVOS_SRC) $(ARCHIVOS_TESTS)
+
+run:
+	./target/release/student_package
+
+# this target is used for compiler checks on the student code only, before compiling unit tests
+build_pre_unit_test:
+	cargo check --lib --offline --locked --quiet
+
+build_unit_test:
+	cargo test --no-run --test unit_test --offline --locked --quiet
+
+# '@' --> don't print command to stdout
+# Also, the docs on nextests say that we can specify --cargo-quiet twice to suppress the entirety of cargo output, but that does not include nextest output, so we redirect to /dev/null directly. Also, we deliberately ignore the exit code on this stage since we already checked the code with the previous targets for standard libtest. We only want to display what the general command does. We use nextest since it has a stable interface for machine parsing via junit format and it's designed to be fully compatible with standard libtest. The default stable toolchain does not currently provide a way to output test results in a machine readable format, and the option to do so is locked under nightly builds which we want to strictly avoid.
+# '-' --> ignore exit code
+run_unit_test:
+	@echo "cargo nextest run --offline --locked --test unit_test"
+	@-cargo nextest run --config-file nextest.toml --offline --locked --test-threads 1 --test unit_test > /dev/null 2>&1
+	@mv ./target/nextest/default/rust_junit.xml rust_junit.xml
+	@python rust_parser.py
+	@cargo clean --offline --locked --quiet
+	@rm -f $(ARCHIVOS_SRC) $(ARCHIVOS_TESTS)
+
+.PHONY: build_io build_unit_test run run_unit_test clean

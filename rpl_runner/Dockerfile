@@ -3,9 +3,9 @@ FROM ubuntu:jammy
 RUN apt-get update     && \
     apt-get upgrade -y && \
     apt-get install -y gcc gcc-multilib g++ clang      	\
-                       make valgrind time python3.10 	\
-                       python3.10-dev libgtest-dev       \
-                       python3-pip git
+    make valgrind time python3.10 	\
+    python3.10-dev libgtest-dev       \
+    python3-pip git curl
 
 # Fix for installing flask in ubuntu:bionic
 RUN apt-get install -y python3-markupsafe
@@ -49,6 +49,27 @@ RUN go get github.com/stretchr/testify@v1.7.0
 
 # Cache testify build
 RUN go install github.com/stretchr/testify
+
+
+# Install Rust for root and make it available to the runner user
+USER runner
+WORKDIR /home/runner
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=1.88.0 -y
+ENV PATH="/home/runner/.cargo/bin:${PATH}"
+
+RUN /home/runner/.cargo/bin/rustc --version
+RUN curl -LsSf https://get.nexte.st/0.9/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
+USER root
+COPY ["nextest.toml", "/"]
+RUN mkdir -p /home/runner/.aux_config_cargo
+# NEEDED HERE TO AVOID PERMANENT UNDETECTABILITY OF RUST PROJECTS
+# if the cargo related toml files are at / cargo will ALWAYS try to compile from there regardless of any parameters or working directory  
+COPY ["Cargo.toml", "Cargo.lock", "/home/runner/.aux_config_cargo/"]
+
+
+
 
 COPY ["*.py", "*_Makefile", "/"]
 

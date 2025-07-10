@@ -24,179 +24,176 @@ def get_unit_test_extension(lang):
         return "java"
     if "go" in lang:
         return "go"
+    if "rust" in lang:
+        return "rs"
     return "c"
 
 
 def ejecutar(submission_id, lang="c_std11"):
     """
     Función principal del script.
-
     """
     with tempfile.TemporaryDirectory(prefix="corrector.") as tmpdir:
-
-        solution_tar = (
-            "tar_assignment_solved_c.tar.gz"  # Obtener a partir del id del mensaje
-        )
-        # Cuando salgo de aca se deberia eliminar todo lo relacionado con esta entrega ya que vive en este directorio
-        #  temporal
-
-        print(f"Obteniendo submission data {submission_id}....")
-        # GET SUBMISSION
-        response = requests.get(
-            f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}", 
-            headers={"Authorization": f"Bearer {API_KEY}"}
-        )
-
-        print(json.dumps(response.json(), indent=4))
-
-        if response.status_code == 404:
+        solution_tar = "tar_assignment_solved_c.tar.gz"
+        submission_metadata = __get_submission_metadata(submission_id)
+        if not submission_metadata:
             return
 
-        if response.status_code != 200:
-            raise Exception("Error al obtener la Submission")
-
-        submission = response.json()
-
-        # SUBMISSION AND ACTIVITY DETAILS
-
-        submission_rplfile_id = submission["submission_rplfile_id"]
-        submission_rplfile_name = submission["submission_rplfile_name"]
-
-        activity_starting_rplfile_id = submission["activity_starting_rplfile_id"]
-        activity_starting_rplfile_name = submission["activity_starting_rplfile_name"]
-
-        activity_unit_tests_file_content = submission[
-            "activity_unit_tests_content"
-        ]  # string with unit_test content
-        activity_io_tests = submission[
-            "activity_io_tests_input"
-        ]  # Array of strings (input part of IO tests)
-
-        activity_language = submission["activity_language"]
-
-        activity_compilation_flags = submission["compilation_flags"]
-
-        is_io_tested = submission["is_io_tested"]
-
+        submission_rplfile_id = submission_metadata["submission_rplfile_id"]
+        activity_starting_rplfile_id = submission_metadata["activity_starting_rplfile_id"]
+        activity_unit_tests_file_content = submission_metadata["activity_unit_tests_content"]
+        activity_io_tests = submission_metadata["activity_io_tests_input"]
+        activity_language = submission_metadata["activity_language"]
+        activity_compilation_flags = submission_metadata["compilation_flags"]
+        is_io_tested = submission_metadata["is_io_tested"]
         test_mode = "IO" if is_io_tested else "unit_test"
 
         print(f"======TEST MODE: {test_mode} ===========")
 
-
-        # ---------------------------------------------------------
-
-        print(f"Obteniendo submission files {submission_rplfile_id}....")
-        # GET SUBMISSION FILES
-        submission_rplfile_response = requests.get(
-            f"{URL_RPL_BACKEND}/api/v3/RPLFile/{submission_rplfile_id}", 
-            headers={"Authorization": f"Bearer {API_KEY}"}
-        )
-
-        if submission_rplfile_response.status_code != 200:
-            raise Exception("Error al obtener el comprimido de submission")
-
-        with open(tmpdir + "/submission_rplfile.tar.gz", "wb") as sf:
-            sf.write(submission_rplfile_response.content)
-
-        # ---------------------------------------------------------
-
-        print(f"Obteniendo activity files {activity_starting_rplfile_id}....")
+        submission_rplfile_path = tmpdir + "/submission_rplfile.tar.gz"
+        __get_rplfile(submission_rplfile_id, submission_rplfile_path)
 
         if activity_starting_rplfile_id:
-            # GET ACTIVITY FILES
-            activity_file_response = requests.get(
-                f"{URL_RPL_BACKEND}/api/v3/RPLFile/{activity_starting_rplfile_id}", 
-                headers={"Authorization": f"Bearer {API_KEY}"}
-            )
-            with open(tmpdir + "/activity_files.tar.gz", "wb") as af:
-                af.write(activity_file_response.content)
+            activity_files_path = tmpdir + "/activity_files.tar.gz"
+            __get_rplfile(activity_starting_rplfile_id, activity_files_path)
         else:
             print("NO HAY ACTIVITY FILES")
 
-        # ---------------------------------------------------------
+        print(f"Submission obtenida. Lenguaje: {activity_language}; Flags: [{activity_compilation_flags}]; Test mode: {test_mode}; Submission RPLFile ID: {submission_rplfile_id}")
 
-        print(f"Submission obtenida: {solution_tar}")
+        __update_submission_status(submission_id, "PROCESSING")
 
-        print("Actualizando submission: PROCESSING")
-        response = requests.put(
-            f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/status",
-            json={"status": "PROCESSING"},
-            headers={"Authorization": f"Bearer {API_KEY}"}
+        submission_tar_path = "submission.tar"
+        __create_submission_tar_for_runner(
+            submission_tar_path,
+            submission_rplfile_path,
+            activity_unit_tests_file_content,
+            activity_io_tests,
+            activity_language
         )
-        
-        if response.status_code != 200:
-            raise Exception(
-                f"Error al actualizar el estado de la submission: {response.json()}"
-            )
 
-        # ---------------------------------------------------------
-        with tarfile.open("submission.tar", "w") as tar:
+        execution_results = __post_to_runner(
+            submission_tar_path,
+            activity_compilation_flags,
+            lang,
+            test_mode
+        )
 
-            print("Agrego archivos de la submission")
-            # Agrego archivos de la submission (incluyen los archivos de la activity por ahora)
-            with tarfile.open(tmpdir + "/submission_rplfile.tar.gz") as submission_tar:
-                for member_tarinfo in submission_tar.getmembers():
-                    member_fileobj = submission_tar.extractfile(member_tarinfo)
-                    tar.addfile(tarinfo=member_tarinfo, fileobj=member_fileobj)
+        print("Result:\n\n")
+        print(json.dumps(execution_results, indent=4))
+        print("################## STDOUT ######################")
+        print(execution_results["tests_execution_stdout"])
+        print("################## STDOUT ######################")
+        print("################## STDERR ######################")
+        print(execution_results["tests_execution_stderr"])
+        print("################## STDERR ######################")
 
-            if activity_unit_tests_file_content:
-                print("Agrego archivos de Unit test")
-                # Agrego archivo de test unitario
+        __post_exec_log(submission_id, execution_results)
+
+
+def __get_submission_metadata(submission_id):
+    print(f"Obteniendo submission data {submission_id}....")
+    response = requests.get(
+        f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}",
+        headers={"Authorization": f"Bearer {API_KEY}"}
+    )
+    print(json.dumps(response.json(), indent=4))
+    if response.status_code == 404:
+        return None
+    if response.status_code != 200:
+        raise Exception("Error al obtener la Submission")
+    return response.json()
+
+
+def __get_rplfile(rplfile_id, dest_path):
+    print(f"Obteniendo submission files {rplfile_id}....")
+    response = requests.get(
+        f"{URL_RPL_BACKEND}/api/v3/RPLFile/{rplfile_id}",
+        headers={"Authorization": f"Bearer {API_KEY}"}
+    )
+    if response.status_code != 200:
+        raise Exception("Error al obtener el comprimido de submission")
+    with open(dest_path, "wb") as f:
+        f.write(response.content)
+
+
+def __update_submission_status(submission_id, status):
+    print(f"Actualizando submission: {status}")
+    response = requests.put(
+        f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/status",
+        json={"status": status},
+        headers={"Authorization": f"Bearer {API_KEY}"}
+    )
+    if response.status_code != 200:
+        raise Exception(
+            f"Error al actualizar el estado de la submission: {response.json()}"
+        )
+
+
+def __create_submission_tar_for_runner(
+    submission_tar_path, 
+    submission_rplfile_path, 
+    activity_unit_tests_file_content, 
+    activity_io_tests, 
+    activity_language
+):
+    with tarfile.open(submission_tar_path, "w") as tar:
+        print("Agrego archivos de la submission")
+        with tarfile.open(submission_rplfile_path) as submission_tar:
+            for member_tarinfo in submission_tar.getmembers():
+                member_fileobj = submission_tar.extractfile(member_tarinfo)
+                if "rust" in activity_language:
+                    member_tarinfo.name = f"src/{member_tarinfo.name}"
+                tar.addfile(tarinfo=member_tarinfo, fileobj=member_fileobj)
+        if activity_unit_tests_file_content:
+            print("Agrego archivos de Unit test")
+            if "rust" in activity_language:
+                unit_test_info = tarfile.TarInfo(name="tests/unit_test.rs")
+            else:
                 unit_test_info = tarfile.TarInfo(
                     name="unit_test." + get_unit_test_extension(activity_language)
                 )
-                unit_test_info.size = len(activity_unit_tests_file_content)
+            unit_test_info.size = len(activity_unit_tests_file_content)
+            tar.addfile(
+                tarinfo=unit_test_info,
+                fileobj=io.BytesIO(activity_unit_tests_file_content.encode("utf-8")),
+            )
+        if activity_io_tests:
+            print("Agrego archivos de IO test")
+            for i, io_test in enumerate(activity_io_tests):
+                IO_test_info = tarfile.TarInfo(name=f"IO_test_{i}.txt")
+                IO_test_info.size = len(io_test)
                 tar.addfile(
-                    tarinfo=unit_test_info,
-                    fileobj=io.BytesIO(activity_unit_tests_file_content.encode("utf-8")),
+                    tarinfo=IO_test_info,
+                    fileobj=io.BytesIO(io_test.encode("utf-8")),
                 )
 
-            if activity_io_tests:
-                print("Agrego archivos de IO test")
-                # Agrego archivo de test IO
-                for i, io_test in enumerate(activity_io_tests):
-                    IO_test_info = tarfile.TarInfo(name=f"IO_test_{i}.txt")
-                    IO_test_info.size = len(io_test)
-                    tar.addfile(
-                        tarinfo=IO_test_info,
-                        fileobj=io.BytesIO(io_test.encode("utf-8")),
-                    )
 
-        with open("submission.tar", "rb") as sub_tar:
+def __post_to_runner(submission_tar_path, activity_compilation_flags, lang, test_mode):
+    with open(submission_tar_path, "rb") as sub_tar:
+        print("POSTing submission to runner server")
+        response = requests.post(
+            "http://runner:8000/",
+            files={
+                "file": ("submissionRECEIVED.tar", sub_tar),
+                "cflags": (None, activity_compilation_flags),
+                "lang": (None, lang),
+                "test_mode": (None, test_mode),
+            },
+        )
+        return response.json()
+    
 
-            print("POSTing submission to runner server")
-            response = requests.post(
-                "http://runner:8000/",
-                files={
-                    "file": ("submissionRECEIVED.tar", sub_tar),
-                    "cflags": (None, activity_compilation_flags),
-                    "lang": (None, lang),
-                    "test_mode": (None, test_mode),
-                },
-            )
-
-            result = response.json()
-
-            print("Result:\n\n")
-            print(json.dumps(result, indent=4))
-
-            print("################## STDOUT ######################")
-            print(result["tests_execution_stdout"])
-            print("################## STDOUT ######################")
-            print("################## STDERR ######################")
-            print(result["tests_execution_stderr"])
-            print("################## STDERR ######################")
-
-            # mandar resultado (json_output/result) POST al backend
-            response = requests.post(
-                f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/execLog",
-                json=result, 
-                headers={"Authorization": f"Bearer {API_KEY}"}
-            )
-            if response.status_code != 201:
-                raise Exception(
-                    f"Error al postear el resultado de la submission: {response.json()}"
-                )
+def __post_exec_log(submission_id, execution_results):
+    response = requests.post(
+        f"{URL_RPL_BACKEND}/api/v3/submissions/{submission_id}/execLog",
+        json=execution_results,
+        headers={"Authorization": f"Bearer {API_KEY}"}
+    )
+    if response.status_code != 201:
+        raise Exception(
+            f"Error al postear el resultado de la submission: {response.json()}"
+        )
 
 
 if __name__ == "__main__":
