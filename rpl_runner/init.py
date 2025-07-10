@@ -8,6 +8,7 @@ import os
 from python_runner import PythonRunner
 from c_runner import CRunner
 from go_runner import GoRunner
+from rust_runner import RustRunner
 from runner import RunnerError, TimeOutError
 from logger import get_logger
 
@@ -15,11 +16,16 @@ LOG = get_logger("RPL-2.0-worker-init")
 
 custom_runners = {
     "c_std11": CRunner,
-    "python_3.7": PythonRunner,
-    "go_1.16": GoRunner, # Just to have support for test submissions
-    "go_1.19": GoRunner
+    "python_3.7": PythonRunner,  # Needed for backwards compatibility with older submissions
+    "python_3.10": PythonRunner,
+    "go_1.16": GoRunner,  # Just to have support for test submissions
+    "go_1.19": GoRunner,
+    "rust_1.88.0": RustRunner,
 }
 
+STUDENT_OUTPUT_START_DELIMITER = "start_RUN"
+STUDENT_OUTPUT_END_DELIMITER = "end_RUN"
+SKIPPABLE_OUTPUTS_FROM_MAKEFILE_EXECUTION = ["assignment_main.py", "custom_IO_main.pyc", "./main", "./target/release/"]
 
 def parse_args():
     import argparse
@@ -108,36 +114,33 @@ def process(lang, test_mode, filename, cflags=""):
             my_stderr.seek(0)
             result["tests_execution_stdout"] = my_stdout.read(9999)  # we can only store up to 10k chars in the column
             result["tests_execution_stderr"] = my_stderr.read(9999)
-            result["stdout_only_run"] = parse_stdout(result["tests_execution_stdout"])
+            sanitize_rust_stderr(lang, result)
+            result["all_student_only_outputs_from_iotests_runs"] = parse_student_only_outputs_from_runs(result["tests_execution_stdout"])
             LOG.info(json.dumps(result, indent=4))
             return result
 
 
-def parse_stdout(log_stdout):
+
+def parse_student_only_outputs_from_runs(log_stdout) -> list[str]:
     """
-    Devuelve una lista de todas las salidas de las corridas SIN EL LOGGING.
+    Devuelve una lista de todas las salidas de las corridas SIN EL LOGGING. Es decir, puramente el stdout de ejecución del alumno, dividido por cada run.
     Se identifica como salida del programa a todo el stdout entre el log start_RUN y end_RUN
     """
-    results = []
-    result = ""
+    all_student_only_outputs_from_runs = []
+    current_output_lines = ""
     for line in log_stdout.split("\n"):
-        if "end_RUN" in line:
-            results.append(result)
-
-        elif "start_RUN" in line:
-            result = ""
-
-        elif (
-            "custom_IO_main.pyc" in line
-            or "assignment_main.py" in line
-            or "./main" in line
-        ):
+        if STUDENT_OUTPUT_END_DELIMITER in line:
+            if current_output_lines.endswith("\n"):
+                current_output_lines = current_output_lines[:-1]
+            all_student_only_outputs_from_runs.append(current_output_lines)
+        elif STUDENT_OUTPUT_START_DELIMITER in line:
+            current_output_lines = ""
+        elif any(skippable in line for skippable in SKIPPABLE_OUTPUTS_FROM_MAKEFILE_EXECUTION):
             continue
-
         else:
-            result += line + "\n"
+            current_output_lines += line + "\n"
 
-    return results
+    return all_student_only_outputs_from_runs
 
 
 def get_unit_test_results(tmpdir, lang):
@@ -180,6 +183,13 @@ def get_custom_unit_test_results_json(criterion_json):
             )
     return result
 
+def sanitize_rust_stderr(lang, result):
+    if "rust" in lang:
+        cargo_exit_status_for_normal_student_failure = "make: [Makefile:27: run_unit_test] Error 100 (ignored)"
+        if cargo_exit_status_for_normal_student_failure in result["tests_execution_stderr"]:
+            result["tests_execution_stderr"] = result["tests_execution_stderr"].replace(
+                cargo_exit_status_for_normal_student_failure, ""
+            )
 
 # Funciones para probar
 
