@@ -36,11 +36,6 @@ class RustRunner(Runner):
         else:
             # first we check that the student code compiles without tests
             print("BUILDING PRE UNIT TEST")
-            print(self.path)
-            print(listdir(self.path))
-            if not listdir(self.path + "/src"):
-                print("THIS SHOULD NOT HAPPEN")
-            
             pre_build = subprocess.Popen(
                 ["make", "-k", "build_pre_unit_test"],
                 cwd=self.path,

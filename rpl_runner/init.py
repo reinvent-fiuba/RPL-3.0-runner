@@ -185,7 +185,7 @@ def get_custom_unit_test_results_json(criterion_json):
 
 def sanitize_rust_stderr(lang, result):
     if "rust" in lang:
-        cargo_exit_status_for_normal_student_failure = "make: [Makefile:27: run_unit_test] Error 100 (ignored)"
+        cargo_exit_status_for_normal_student_failure = "make: [Makefile:24: run_unit_test] Error 100 (ignored)"
         if cargo_exit_status_for_normal_student_failure in result["tests_execution_stderr"]:
             result["tests_execution_stderr"] = result["tests_execution_stderr"].replace(
                 cargo_exit_status_for_normal_student_failure, ""
