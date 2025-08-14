@@ -1,9 +1,9 @@
-# RPL-2.0-runner
+# RPL-3.0-runner
 
 
 ## local PROD integration testing via docker compose
 
-IMPORTANT: Make sure to follow these setup instructions first: [RPL-3.0 (Backend APIs): local PROD via docker compose](https://github.com/MiguelV5/RPL-3.0#local-prod-via-docker-compose)
+IMPORTANT: Make sure to follow these setup instructions first: [RPL-3.0 (Backend APIs): local PROD via docker compose](https://github.com/reinvent-fiuba/RPL-3.0#local-prod-via-docker-compose)
 
 ONLY AFTER the metaservices and the APIs from RPL-3.0 are running, you can run this to start both the receiver and the runner in a containerized environment:
 
@@ -20,7 +20,7 @@ You can spin up the frontend whenever you want, the only mandatory services are 
 
 ## local PROD integration testing via minikube
 
-IMPORTANT: Make sure to follow these setup instructions first: [RPL-3.0 (Backend APIs): local PROD via minikube](https://github.com/MiguelV5/RPL-3.0#local-prod-via-minikube)
+IMPORTANT: Make sure to follow these setup instructions first: [RPL-3.0 (Backend APIs): local PROD via minikube](https://github.com/reinvent-fiuba/RPL-3.0#local-prod-via-minikube)
 
 ONLY AFTER the backend's minikube setup, you can follow these steps to start the kubernetes deployment and service:
 
@@ -66,7 +66,16 @@ kubectl delete --all services --namespace=default
 
 ---
 
-## (Previous) USAGE
+---
+
+---
+
+## DEPRECATED: README.md content from RPL-2.0-runner:
+
+This was mainly local testing of the single image for the runner and the receiver. 
+Currently it is strongly recommended to use the previously mentioned kubernetes/docker-compose setup for local PROD integration testing. 
+
+## USAGE
 
 Build receiver docker image:
 
