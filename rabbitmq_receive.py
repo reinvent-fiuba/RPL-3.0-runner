@@ -48,6 +48,7 @@ def start_consuming():
     while attempt < max_attempts:
         try:
             connection = pika.BlockingConnection(pika.URLParameters(QUEUE_URL))
+            break
         except pika.exceptions.AMQPError as e:
             attempt += 1
             print(f"Error conectando a RabbitMQ: {e}")
