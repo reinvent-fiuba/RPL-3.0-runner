@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import time
 import pika
 import functools
 import receiver
@@ -41,7 +42,19 @@ def on_message(channel, method, properties, body, args):
     threads.append(t)
 
 def start_consuming():
-    connection = pika.BlockingConnection(pika.URLParameters(QUEUE_URL))
+    max_attempts = 20
+    delay = 5
+    attempt = 0
+    while attempt < max_attempts:
+        try:
+            connection = pika.BlockingConnection(pika.URLParameters(QUEUE_URL))
+        except pika.exceptions.AMQPError as e:
+            attempt += 1
+            print(f"Error conectando a RabbitMQ: {e}")
+            print(f"Intento {attempt} de {max_attempts}")
+            if attempt >= max_attempts:
+                raise e
+            time.sleep(delay)
     channel = connection.channel()
 
     channel.queue_declare(
