@@ -102,5 +102,5 @@ jobs:
           kustomize edit set image $REGISTRY_HOSTNAME/$GKE_PROJECT/$WORKER_IMAGE:${GITHUB_SHA}
           kustomize edit set image $REGISTRY_HOSTNAME/$GKE_PROJECT/$RUNNER_IMAGE:${GITHUB_SHA}
           kustomize build . | kubectl apply -f -
-          kubectl rollout status deployment/$DEPLOYMENT_NAME
+          kubectl rollout status deployment/$DEPLOYMENT_NAME --timeout=480s
           kubectl get services -o wide
