@@ -17,7 +17,7 @@ on:
   push:
     branches: [ main, test/** ]
   schedule:
-  - cron: "00 12 1 * *"
+  - cron: "00 2 1,16 * *" # at 2 am on the 1st and 16th of every month
 
 # Environment variables available to all jobs and steps in this workflow
 env:
