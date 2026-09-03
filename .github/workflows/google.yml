@@ -17,7 +17,7 @@ on:
   push:
     branches: [ main, test/** ]
   schedule:
-  - cron: "00 12 1 * *"
+  - cron: "00 2 1,16 * *" # at 2 am on the 1st and 16th of every month
 
 # Environment variables available to all jobs and steps in this workflow
 env:
@@ -102,5 +102,5 @@ jobs:
           kustomize edit set image $REGISTRY_HOSTNAME/$GKE_PROJECT/$WORKER_IMAGE:${GITHUB_SHA}
           kustomize edit set image $REGISTRY_HOSTNAME/$GKE_PROJECT/$RUNNER_IMAGE:${GITHUB_SHA}
           kustomize build . | kubectl apply -f -
-          kubectl rollout status deployment/$DEPLOYMENT_NAME
+          kubectl rollout status deployment/$DEPLOYMENT_NAME --timeout=480s
           kubectl get services -o wide
